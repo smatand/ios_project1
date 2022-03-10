@@ -29,9 +29,17 @@ POSITIONAL_ARGS=()
 
 while [ $# -gt 0 ]; do
 	case $1 in
+		infected)
+			# total of nonblank lines (-vc)
+			cat $2 | grep -vc ^$
+			break # TODO
+			;;
 		-h)
 			print_help
 			exit 0
+			;;
+		*)
+			POSITIONAL_ARGS+=("$1")
 			;;
 	esac
 done
