@@ -29,10 +29,16 @@ POSITIONAL_ARGS=()
 
 while [ $# -gt 0 ]; do
 	case $1 in
+		# total of nonblank lines (-vc)
 		infected)
-			# total of nonblank lines (-vc)
-			cat $2 | grep -vc ^$
+			cat $2 | sed '1d'| grep -vc ^$
 			break # TODO
+			;;
+		merge)
+			# TODO
+			;;
+		gender)
+			break
 			;;
 		-h)
 			print_help
