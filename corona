@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Author: Andrej Smatana <xsmata03@fit.vutbr.cz>
+
+export POSIXLY_CORRECT=yes
+export LC_NUMBERIC=en_US.UTF-8
+
+
+print_help()
+{
+	echo -e	"Usage:	corona [-h]\n"
+	echo -e	"Usage:	corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
+
+	echo	"Commands:"
+	echo	"	infected - counts total of infected"
+	echo	"	merge - merges files with logs into 1 file"
+	echo -e "	TODO \n" # TODO
+
+	echo "Filters:"
+	echo	"	-a DATETIME		process logs after DATETIME including the date itself (YYYY-MM-DD)"
+	echo	"	-b DATETIME		process logs before DATETIME including the date itself"
+	echo	"	-g GENDER		process logs of infected people of a GENDER (M - men, Z - women)"
+	echo -e "	-s [WIDTH]		print data in the form of histograms (WIDTH sets width of histograms)\n"		
+
+	echo "	-h			give this help list"
+}
+
+POSITIONAL_ARGS=()
+
+while [ $# -gt 0 ]; do
+	case $1 in
+		-h)
+			print_help
+			exit 0
+			;;
+	esac
+done
