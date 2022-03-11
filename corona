@@ -7,8 +7,8 @@ export LC_NUMBERIC=en_US.UTF-8
 
 print_help()
 {
-	echo -e	"Usage:	corona [-h]\n"
-	echo -e	"Usage:	corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
+	echo -e	"Usage: corona [-h]"
+	echo -e	"       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
 
 	echo	"Commands:"
 	echo	"	infected - counts total of infected"
@@ -28,6 +28,10 @@ FILTER_AFTER=off
 FILTER_BEFORE=off
 FILTER_GENDER=off
 FILTER_WIDTH=off
+
+COMMAND=off
+
+GZ_LOG_FILES=""
 
 # parsing filters
 while [ $# -gt 0 ]; do
@@ -50,6 +54,7 @@ while [ $# -gt 0 ]; do
 					exit 1
 				fi
 			fi
+			shift
 			;;
 		-b|-before)
 			if [ $# -lt 1 ]; then
@@ -67,6 +72,7 @@ while [ $# -gt 0 ]; do
 					exit 1
 				fi
 			fi
+			shift
 			;;
 	  -g)
 	    if [ $# -lt 1 ]; then
@@ -84,6 +90,7 @@ while [ $# -gt 0 ]; do
 	        exit 1
 	      fi
 	    fi
+	    shift
 	    ;;
 	  -w)
 	    if [ $# -lt 1 ]; then
@@ -101,12 +108,37 @@ while [ $# -gt 0 ]; do
 	        exit 1
 	      fi
 	    fi
+	    shift
 	    ;;
+	  infected|merge|gender|age|daily|monthly|yearly|countries|districts|regions)
+	    if [ "$COMMAND" = "off" ]; then
+	      COMMAND=$key
+	    else
+	      echo "error: Prikaz moze byt uvedeny len raz."
+	      exit 1
+	    fi
+	    ;;
+	  -h)
+	    print_help
+	    break
+	    ;;
+	  *)
+	    echo "error: Prikaz \"$key\" je neznamy. Precitajte si manual!\n"
+	    print_help
+	    exit 1
+	    ;;
+	  #*)
+	  #  if [ ]; then
+	  #    GZ_LOG_FILES="$1 GZ_LOG_FILES"
+	  #  else
+	  #    LOG_FILES="$1 $LOG_FILES"
+	  #  fi
 	esac
 done
 
-# make sure the date is in correct format
-
+#READ_INPUT="gzip -d -c $GZIP | cat $LOG_FILES -"
+#
+#READ_FILTERED="eval $READ_INPUT | awk -F ',' 'if ("$3" = "$FILTER_GENDER") {print \$0}'"
 
 
 
