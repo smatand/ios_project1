@@ -147,11 +147,14 @@ case $COMMAND in
     #TODO
     ;;
   gender)
-    #cat $LOG_FILES - | awk -vFS '{count[$4]++} END {for (word in count) print word, count[word]}'
     awk -F ',' 'NR>1 {a[$4]++} END{for(i in a) print i ": " a[i]}' $LOG_FILES
     ;;
   daily)
-    awk -F ',' 'NR>1 {a[$2]++}END{for(i in a) print i ": " a[i]}' $LOG_FILES | sort
+    awk -F ',' 'NR>1 {a[$2]++} END{for(i in a) print i ": " a[i]}' $LOG_FILES | sort
+    ;;
+  districts)
+    awk -F ',' '  BEGIN {count=0; NR > 1} NR>1 {a[$6]++; if ($6 == "") count+=1}
+                  END{for(i in a) print i ": " a[i]; print "None: " count}' $LOG_FILES | sort
     ;;
 esac
 
