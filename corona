@@ -5,7 +5,6 @@
 export POSIXLY_CORRECT=yes
 export LC_NUMBERIC=en_US.UTF-8
 
-
 print_help()
 {
 	echo -e	"Usage:	corona [-h]\n"
@@ -25,27 +24,74 @@ print_help()
 	echo "	-h			give this help list"
 }
 
-POSITIONAL_ARGS=()
+FILTER_AFTER=off
+FILTER_BEFORE=off
+FILTER_GENDER=off
+FILTER_WIDTH=off
 
 while [ $# -gt 0 ]; do
-	case $1 in
-		# total of nonblank lines (-vc)
-		infected)
-			cat $2 | sed '1d'| grep -vc ^$
-			break # TODO
+	key=$1
+	shift
+	case $key in
+		-a|-after)
+			if [ $# -lt 1 ]; then
+				echo "error: Chybajuci argument k filtru -a"
+				exit 1
+			else
+				if [ "$FILTER_AFTER" = "off" ]; then
+					FILTER_AFTER=$1
+					if ! [[ $FILTER_AFTER =~ ^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$ ]]; then
+            echo "error: Datum musi byt vo formate YYYY-MM-DDD"
+            exit 1
+          fi
+				else
+					echo "error: Filter moze byt pouzity len 1-krat."
+					exit 1
+				fi
+			fi
 			;;
-		merge)
-			# TODO
+		-b|-before)
+			if [ $# -lt 1 ]; then
+				echo "error: Chybajuci argument k filtru -b"
+				exit 1
+			else
+				if [ "$FILTER_BEFORE" = "off" ]; then
+					FILTER_BEFORE=$1
+					if ! [[ $FILTER_BEFORE =~ ^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$ ]]; then
+					  echo "error: Datum musi byt vo formate YYYY-MM-DDD"
+					  exit 1
+					fi
+				else
+					echo "error: Filter moze byt pouzity len 1-krat."
+					exit 1
+				fi
+			fi
 			;;
-		gender)
-			break
-			;;
-		-h)
-			print_help
-			exit 0
-			;;
-		*)
-			POSITIONAL_ARGS+=("$1")
-			;;
-	esac
+	esac	
 done
+
+# make sure the date is in correct format
+
+
+
+
+        # https://stackoverflow.com/questions/18748933/user-input-date-format-verification-in-bash/18748968#18748968
+				# https://stackoverflow.com/questions/21112707/check-if-a-string-matches-a-regex-in-bash-script 
+				# TODO what about february?
+				#[[ "$1" =~ ^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$ ]] && DATE=$1
+#while [ $# -gt 0 ]; do
+#	case $1 in
+#		# total of nonblank lines (-vc)
+#		infected)
+#			cat $2 | sed '1d'| grep -vc ^$
+#			break # TODO
+#			;;
+#		-h)
+#			print_help
+#			exit 0
+#			;;
+#		*)
+#			POSITIONAL_ARGS+=("$1")
+#			;;
+#	esac
+#done
