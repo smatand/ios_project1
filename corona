@@ -32,6 +32,7 @@ FILTER_WIDTH=off
 COMMAND=off
 
 GZ_LOG_FILES=""
+LOG_FILES=""
 
 # parsing filters
 while [ $# -gt 0 ]; do
@@ -63,6 +64,8 @@ while [ $# -gt 0 ]; do
 			else
 				if [ "$FILTER_BEFORE" = "off" ]; then
 					FILTER_BEFORE=$1
+					# https://stackoverflow.com/questions/21112707/check-if-a-string-matches-a-regex-in-bash-script
+          # TODO what about february?
 					if ! [[ $FILTER_BEFORE =~ ^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$ ]]; then
 					  echo "error: Datum musi byt vo formate YYYY-MM-DDD"
 					  exit 1
@@ -122,43 +125,36 @@ while [ $# -gt 0 ]; do
 	    print_help
 	    break
 	    ;;
+	  *.gz|*.bz2) #TODO TEMPORARY
+	    GZ_LOG_FILES=$key
+	    ;;
+	  *.csv)
+	    LOG_FILES=$key
+	    ;;
 	  *)
 	    echo "error: Prikaz \"$key\" je neznamy. Precitajte si manual!\n"
 	    print_help
 	    exit 1
 	    ;;
-	  #*)
-	  #  if [ ]; then
-	  #    GZ_LOG_FILES="$1 GZ_LOG_FILES"
-	  #  else
-	  #    LOG_FILES="$1 $LOG_FILES"
-	  #  fi
 	esac
 done
 
-#READ_INPUT="gzip -d -c $GZIP | cat $LOG_FILES -"
-#
-#READ_FILTERED="eval $READ_INPUT | awk -F ',' 'if ("$3" = "$FILTER_GENDER") {print \$0}'"
+case $COMMAND in
+  infected)
+    cat $LOG_FILES | sed '1d' | grep -vc ^$
+    ;;
+  merge)
+    #TODO
+    ;;
+  gender)
+    #cat $LOG_FILES - | awk -vFS '{count[$4]++} END {for (word in count) print word, count[word]}'
+    awk -F ',' 'NR>1 {a[$4]++} END{for(i in a) print i ": " a[i]}' $LOG_FILES
+    ;;
+  daily)
+    awk -F ',' 'NR>1 {a[$2]++}END{for(i in a) print i ": " a[i]}' $LOG_FILES | sort
+    ;;
+esac
 
-
-
-        # https://stackoverflow.com/questions/18748933/user-input-date-format-verification-in-bash/18748968#18748968
-				# https://stackoverflow.com/questions/21112707/check-if-a-string-matches-a-regex-in-bash-script 
-				# TODO what about february?
-				#[[ "$1" =~ ^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$ ]] && DATE=$1
-#while [ $# -gt 0 ]; do
-#	case $1 in
-#		# total of nonblank lines (-vc)
-#		infected)
-#			cat $2 | sed '1d'| grep -vc ^$
-#			break # TODO
-#			;;
-#		-h)
-#			print_help
-#			exit 0
-#			;;
-#		*)
-#			POSITIONAL_ARGS+=("$1")
-#			;;
-#	esac
-#done
+#READ_INPUT="gzip -d -c -f $GZ_LOG_FILES | cat $LOG_FILES -"
+#eval $READ_INPUT | awk -vFS=, '$8 == "CZ"{print $0}' osoby.csv  | wc -l
+  # https://stackoverflow.com/questions/18748933/user-input-date-format-verification-in-bash/18748968#18748968
