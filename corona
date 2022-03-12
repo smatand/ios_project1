@@ -201,6 +201,8 @@ case $COMMAND in
     awk -F ',' '  BEGIN {count=0;} NR>1 {a[$5]++; if ($5 == "") count+=1}
                   END   {for(i in a) print i ": " a[i]; print "None: " count}' $LOG_FILES | sort
     ;;
+  off)
+    awk -F ',' '{if ($2) {print $0}}' $LOG_FILES
 esac
 
 #READ_INPUT="gzip -d -c -f $GZ_LOG_FILES | cat $LOG_FILES -"
