@@ -4,6 +4,7 @@
 
 export POSIXLY_CORRECT=yes
 export LC_NUMBERIC=en_US.UTF-8
+export LC_ALL=C
 
 print_help()
 {
@@ -174,7 +175,7 @@ case $COMMAND in
       } END{for(i in a) print i ": " a[i]}' $LOG_FILES | sort -V
     ;;
   merge)
-    #TODO
+    uniq $LOG_FILES
     ;;
   gender)
     awk -F ',' 'NR>1 {a[$4]++} END{for(i in a) print i ": " a[i]}' $LOG_FILES
