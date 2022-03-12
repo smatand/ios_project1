@@ -25,9 +25,20 @@ print_help()
 	echo "	-h			give this help list"
 }
 
-FILTER_AFTER=off
-FILTER_BEFORE=off
-FILTER_GENDER=off
+awk_filter()
+{
+  if [ -z "$FILTER_GENDER" ]; then
+    awk -F, -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" '
+    NR>1 {if ( $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
+  else
+    awk -F, -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" '
+    NR>1 {if ( $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
+  fi
+}
+
+FILTER_AFTER=""
+FILTER_BEFORE="9999-12-31"
+FILTER_GENDER=""
 FILTER_WIDTH=off
 
 COMMAND=off
