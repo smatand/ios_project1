@@ -29,10 +29,10 @@ awk_filter()
 {
   if [ -z "$FILTER_GENDER" ]; then
     awk -F, -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" '
-    NR>1 {if ( $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
+    BEGIN{print $0} {if ( $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
   else
     awk -F, -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" '
-    NR>1 {if ( $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
+    BEGIN{print $0} {if ( $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
   fi
 }
 
@@ -213,7 +213,7 @@ case $COMMAND in
                   END   {for(i in a) print i ": " a[i]; print "None: " count}' $LOG_FILES | sort
     ;;
   off)
-    awk -F ',' '{if ($2) {print $0}}' $LOG_FILES
+    awk_filter
 esac
 
 #READ_INPUT="gzip -d -c -f $GZ_LOG_FILES | cat $LOG_FILES -"
