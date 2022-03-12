@@ -27,12 +27,15 @@ print_help()
 
 awk_filter()
 {
+  # print head and cut first character, which is space for unknown reason TODO
+  head -n 1 $LOG_FILES | cut -c2-
+
   if [ -z "$FILTER_GENDER" ]; then
-    awk -F, -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" '
-    BEGIN{print $0} {if ( $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
+    awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" '
+    {if (NF == 9 && $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
   else
-    awk -F, -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" '
-    BEGIN{print $0} {if ( $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
+    awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" '
+    {if (NF == 9 && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
   fi
 }
 
@@ -153,7 +156,7 @@ done
 
 case $COMMAND in
   infected)
-    cat $LOG_FILES | sed '1d' | grep -vc ^$
+    awk_filter | sed '1d' | wc -l
     ;;
   age)
     awk -F ',' 'NR>1 {
@@ -214,6 +217,7 @@ case $COMMAND in
     ;;
   off)
     awk_filter
+    ;;
 esac
 
 #READ_INPUT="gzip -d -c -f $GZ_LOG_FILES | cat $LOG_FILES -"
