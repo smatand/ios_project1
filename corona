@@ -30,12 +30,14 @@ awk_filter()
   # print head and cut first character, which is space for unknown reason TODO
   head -n 1 $LOG_FILES #| cut -c2-
 
+
+
   if [ -z "$FILTER_GENDER" ]; then
-    awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" '
-    {if (NF == 9 && $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
+    awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v _rgx_dt=${_regex_date} '
+    {if (NF == 9 && $2 ~ _rgx_dt && $3 ~ _rgx_age && $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
   else
-    awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" '
-    {if (NF == 9 && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
+    awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" -v _rgx_dt=${_regex_date} '
+    {if (NF == 9 && $2 ~ _rgx_dt && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
   fi
 }
 
@@ -49,6 +51,9 @@ COMMAND=off
 GZ_LOG_FILES=""
 LOG_FILES=""
 
+_regex_date='^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$'
+_regex_age='^\b[0-9]+\b$'
+
 # parsing filters
 while [ $# -gt 0 ]; do
 	key=$1
@@ -61,7 +66,7 @@ while [ $# -gt 0 ]; do
 			else
 				if [ -z $FILTER_AFTER ]; then
 					FILTER_AFTER=$1
-					if ! [[ $FILTER_AFTER =~ ^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$ ]]; then
+					if ! [[ $FILTER_AFTER =~ ${_regex_date} ]]; then
             echo "error: Datum musi byt vo formate YYYY-MM-DDD"
             exit 1
           fi
@@ -81,8 +86,8 @@ while [ $# -gt 0 ]; do
 					FILTER_BEFORE=$1
 					# https://stackoverflow.com/questions/21112707/check-if-a-string-matches-a-regex-in-bash-script
           # TODO what about february?
-					if ! [[ $FILTER_BEFORE =~ ^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$ ]]; then
-					  echo "error: Datum musi byt vo formate YYYY-MM-DDD"
+					if ! [[ $FILTER_BEFORE =~ ${_regex_date} ]]; then
+					  echo "error: Datum musi byt vo formate YYYY-MM-DD"
 					  exit 1
 					fi
 				else
@@ -201,7 +206,7 @@ case $COMMAND in
     awk -F '[,-]' 'NR>1 {a[$6 "-" $7]++} END{for (i in a) print i ": " a[i]}' $LOG_FILES | sort
     ;;
   yearly)
-    awk -F '[,-]' 'NR>1 {a[$6]++} END{for (i in a) print i ": " a[i]}' $LOG_FILES | sort
+    awk_filter | awk -F '[,-]' 'NR>1 {a[$6]++} END{for (i in a) print i ": " a[i]}' | sort
     ;;
   countries)
     # filed $7 says about whether person was infected at foreign country
