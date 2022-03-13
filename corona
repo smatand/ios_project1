@@ -43,7 +43,7 @@ awk_filter()
 awk_histogram()
 {
   if [ $S_FLAG="on" ]; then
-    awk -F ':' -v width="$S_HISTOGRAM" '{
+    awk -F ':' -v width="$WIDTH" '{
     constant=(int($2 / width)); printf("%s: ", $1); while (constant) { printf("#"); constant--} printf("\n");}'
   else
     awk -F ':' -v s="$S" '
@@ -60,9 +60,8 @@ FILTER_AFTER=""
 FILTER_BEFORE="9999-12-31"
 FILTER_GENDER=""
 
-S_FLAG="off"
-S_HISTOGRAM=""
-S=""
+S_FLAG=""
+WIDTH=""
 
 COMMAND=off
 
@@ -70,7 +69,7 @@ GZ_LOG_FILES=""
 LOG_FILES=""
 
 _regex_date='^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$'
-_regex_age='^[0-9]+$'
+#_regex_integer='^[1-9][0-9]*$'
 
 # parsing filters
 while [ $# -gt 0 ]; do
@@ -134,10 +133,27 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	  -s)
+	    if ! [[ -z $S_FLAG ]]; then
+	      echo "error: Filter -s moze byt pouzity len 1-krat."
+        exit 1
+	    else
+	      if [ $# -lt 1 ]; then
+	        WIDTH=1
+	      else
+	        if ! [[ $1 =~ ^[1-9][0-9]*$ ]]; then
+	          echo "error: Parameter sirky moze byt len cele kladne cislo vacsie ako 0."
+            exit 1
+          fi
+	        WIDTH=$1
+	        S_FLAG="on"
+	      fi
+	    fi
+	    shift
+	    ;;
 	    #if [ $S_FLAG="off" ]; then
 	    #  S_FLAG="on"
 	    #  if [ $# -lt 1 ]; then
-      #    S_HISTOGRAM=100000
+      #    WIDTH=100000
       #  else
       #    S=$1
       #    if ! [[ $S =~ ^[0-9]+$ ]]; then
