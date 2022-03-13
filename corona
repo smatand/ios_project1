@@ -28,16 +28,15 @@ print_help()
 awk_filter()
 {
   # print head and cut first character, which is space for unknown reason TODO
-  head -n 1 $LOG_FILES #| cut -c2-
-
-
+  #head -n 1 $LOG_FILES #| cut -c2-
+  echo "id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
 
   if [ -z "$FILTER_GENDER" ]; then
     awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v _rgx_dt=${_regex_date} '
-    {if (NF == 9 && $2 ~ _rgx_dt && $3 ~ _rgx_age && $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
+    {if (NF <= 9 && $2 ~ _rgx_dt && $3 ~ _rgx_age && $2 >= filter_after && $2 <= filter_before) {print $0}}' $LOG_FILES
   else
     awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" -v _rgx_dt=${_regex_date} '
-    {if (NF == 9 && $2 ~ _rgx_dt && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
+    {if (NF <= 9 && $2 ~ _rgx_dt && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender) {print $0}}' $LOG_FILES
   fi
 }
 
