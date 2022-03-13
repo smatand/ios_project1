@@ -28,7 +28,7 @@ print_help()
 awk_filter()
 {
   # print head and cut first character, which is space for unknown reason TODO
-  head -n 1 $LOG_FILES | cut -c2-
+  head -n 1 $LOG_FILES #| cut -c2-
 
   if [ -z "$FILTER_GENDER" ]; then
     awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" '
@@ -189,7 +189,7 @@ case $COMMAND in
       } END{for(i in a) print i ": " a[i]}' $LOG_FILES | sort -V
     ;;
   merge)
-    uniq $LOG_FILES
+    uniq $LOG_FILES | awk_filter
     ;;
   gender)
     awk -F ',' 'NR>1 {a[$4]++} END{for(i in a) print i ": " a[i]}' $LOG_FILES
