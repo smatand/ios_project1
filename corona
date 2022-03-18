@@ -63,7 +63,7 @@ awk_histogram()
   if [[ $S_FLAG = "default" ]]; then
     awk -F ':' -v width="$WIDTH" '{
     constant=(int($2 / width)); printf("%s: ", $1); while (constant) { printf("#"); constant--} printf("\n");}'
-  elif [[ $S_FLAG =~ ^[1-9][0-9]*$ ]]; then
+  elif ! [[ -z $S_FLAG  ]]; then
     awk -F ':' -v s="$S_FLAG" '
       BEGIN {max=0;}
       {      if (max<$2) {max=$2;} a[NR] = $1; value[NR] = $2;}
@@ -91,6 +91,8 @@ COMMAND="off"
 
 GZ_LOG_FILES=""
 LOG_FILES=""
+
+OUTPUT=""
 
 _regex_date='[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])'
 _regex_integer='^[0-9]*$'
@@ -164,7 +166,7 @@ while [ $# -gt 0 ]; do
 	      if [[ $# -lt 1 ]]; then
 	        S_FLAG="default"
 	      else
-	        if ! [[ $1 =~ ^[1-9][0-9]*$ ]]; then
+	        if ! [[ $1 =~ ${_regex_integer} ]]; then #^[1-9][0-9]*$
 	          echo "error: Parameter sirky moze byt len cele kladne cislo vacsie ako 0."
             exit 1
           fi
@@ -202,25 +204,27 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
+################################ FILTERING #################################
 case $COMMAND in
-    merge)
-      cat $LOG_FILES | awk_filter
-      #sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-      #TODO fix the bug
-      COMMAND="PROCESSED"
-      ;;
-    off)
-      echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter
-      COMMAND="PROCESSED"
-      ;;
+  infected)
+    echo "$LOG_FILES" | sed -r 's/\s+//g' | awk_filter | sed '1d' | wc -l
+    COMMAND="PROCESSED"
+    ;;
+  merge)
+    cat $LOG_FILES | awk_filter
+    #sed -r 's/\s+//g' $LOG_FILES | awk_invalid
+    #TODO fix the bug
+    COMMAND="PROCESSED"
+    ;;
+  off)
+    echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter
+    COMMAND="PROCESSED"
+    ;;
 esac
 
 if ! [[ $COMMAND = "PROCESSED" ]]; then
-  echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter |
+  OUTPUT=$( echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter |
     case $COMMAND in
-      infected)
-        sed '1d' | wc -l
-        ;;
       age)
         WIDTH=10000
         awk -F ',' 'NR>1 {
@@ -277,7 +281,13 @@ if ! [[ $COMMAND = "PROCESSED" ]]; then
                       END   {for(i in a) print i ": " a[i]; if (count) {print "None: " count;}}' | sort
         ;;
     esac
+  )
+  if [[ S_FLAG > 0 ]]; then
+    echo "$OUTPUT" | awk_histogram
+  else
+    echo "$OUTPUT"
+  fi
 fi
 
+echo "$LOG_FILES" | sed -r 's/\s+//g' | awk_invalid
 # in the end output all invalid lines by doing the same process again
-echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_invalid
