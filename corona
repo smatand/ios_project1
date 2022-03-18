@@ -32,11 +32,12 @@ awk_filter()
   if [ -z "$FILTER_GENDER" ]; then
     awk -F ','  -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" \
                 -v rgx_dt=${_regex_date} -v rgx_int=${_regex_integer} '{
-      if (NF <= 9 && $2 ~ rgx_dt && $2 >= filter_after && $2 <= filter_before  && $3 ~ rgx_int)  {print $0;}}'
+      if ((NF <= 9 && NF > 1) && ($2 ~ rgx_dt || $2 == "") && $2 >= filter_after && $2 <= filter_before  && $3 ~ rgx_int) {
+        print $0;}}'
   else
     awk -F ','  -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" \
                 -v filter_gender="$FILTER_GENDER" -v rgx_dt=${_regex_date} -v rgx_int=${_regex_integer} '{
-      if (NF <= 9 && $2 ~ rgx_dt && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender && $3 ~ rgx_int) {print $0}}'
+      if ((NF <= 9 && NF > 1) && ($2 ~ rgx_dt || $2 == "") && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender && $3 ~ rgx_int) {print $0}}'
   fi
 }
 
@@ -46,14 +47,14 @@ awk_invalid()
       awk -F ','  -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" \
                   -v rgx_dt=${_regex_date} -v rgx_int=${_regex_integer} '{
         if (NF <= 9 && NF>1 && $2 >= filter_after && $2 <= filter_before)  {
-          if (!($2 ~ rgx_dt))         {print "Invalid date: " $0;}
-          else if (!($3 ~ rgx_int))   {print "Invalid age: " $0;}}}'
+          if (!($2 ~ rgx_dt || $2 == ""))         {print "Invalid date: " $0;}
+          else if (!($3 ~ rgx_int || $2 == ""))   {print "Invalid age: " $0;}}}'
   else
        awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" \
                   -v rgx_dt=${_regex_date} -v rgx_int=${_regex_integer} '{
           if (NF <= 9 && NF>1 && $2 >= filter_after && $2 <= filter_before && $4 == filter_gender)  {
-            if (!($2 ~ rgx_dt))       {print "Invalid date: " $0;}
-            else if (!($3 ~ rgx_int)) {print "Invalid age: " $0}}}'
+            if (!($2 ~ rgx_dt || $2 == ""))       {print "Invalid date: " $0;}
+            else if (!($3 ~ rgx_int || $2 == "")) {print "Invalid age: " $0}}}'
   fi
 }
 
@@ -239,13 +240,15 @@ case $COMMAND in
   monthly)
     WIDTH=10000
     # use function awk_daily to print in format of YYYY-MM-DD and then process the output of this function
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk_daily | awk -F '[- ]' '{a[$1 "-" $2] += $4;}
+    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk_daily | awk -F '[- ]' '{
+      if (!($1 == "None:")) {a[$1 "-" $2] += $4;} else {a["None"] += $2;}}
       END   {for (i in a) print i ": " a[i];}' | sort
     sed -r 's/\s+//g' $LOG_FILES | awk_invalid
     ;;
   yearly)
     WIDTH=100000
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk_daily | awk -F '[- ]' '{a[$1] += $4;}
+    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk_daily | awk -F '[- ]' '{
+      ;if (!($1 == "None:")) {a[$1] += $4;} else {a["None"] += $2;}}
       END   {for (i in a) print i ": " a[i];}' | sort
     sed -r 's/\s+//g' $LOG_FILES | awk_invalid
     ;;
