@@ -87,7 +87,7 @@ FILTER_GENDER=""
 S_FLAG=""
 WIDTH=""
 
-COMMAND=off
+COMMAND="off"
 
 GZ_LOG_FILES=""
 LOG_FILES=""
@@ -185,11 +185,14 @@ while [ $# -gt 0 ]; do
 	    print_help
 	    break
 	    ;;
-	  *.gz|*.bz2) #TODO TEMPORARY
-	    GZ_LOG_FILES=$key
+	  *.gz)
+	    LOG_FILES=$( gzip -d -c $key )
+	    ;;
+	  *.bz2)
+	    LOG_FILES=$(bzip2 -d -c $key)
 	    ;;
 	  *.csv)
-	    LOG_FILES=$key
+	    LOG_FILES=$( cat $key )
 	    ;;
 	  *)
 	    echo "error: Prikaz \"$key\" je neznamy. Precitajte si manual!\n"
@@ -200,86 +203,81 @@ while [ $# -gt 0 ]; do
 done
 
 case $COMMAND in
-  infected)
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | sed '1d' | wc -l
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  age)
-    WIDTH=10000
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk -F ',' 'NR>1 {
-      if ($3 > 105)       {a[">105  "]++;}
-      else if ($3 > 95)   {a["96-105"]++;}
-      else if ($3 > 85)   {a["86-95 "]++;}
-      else if ($3 > 75)   {a["76-85 "]++;}
-      else if ($3 > 65)   {a["66-75 "]++;}
-      else if ($3 > 55)   {a["56-65 "]++;}
-      else if ($3 > 45)   {a["46-55 "]++;}
-      else if ($3 > 35)   {a["36-45 "]++;}
-      else if ($3 > 25)   {a["26-35 "]++;}
-      else if ($3 > 15)   {a["16-25 "]++;}
-      else if ($3 > 5)    {a["6-15  "]++;}
-      else if ($3 >= 0)   {a["0-5   "]++;}
-      else                {a["None  "]++;}
-      } END{for(i in a) print i ": " a[i]}' | sort -V
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  merge)
-    cat $LOG_FILES | awk_filter
-    #sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  gender)
-    WIDTH=100000
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk -F ',' 'NR>1 {a[$4]++} END{for(i in a) print i ": " a[i]}'
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  daily)
-    WIDTH=500
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk_daily | sort
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  monthly)
-    WIDTH=10000
-    # use function awk_daily to print in format of YYYY-MM-DD and then process the output of this function
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk_daily | awk -F '[- ]' '{
-      if (!($1 == "None:")) {a[$1 "-" $2] += $4;} else {a["None"] += $2;}}
-      END   {for (i in a) print i ": " a[i];}' | sort
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  yearly)
-    WIDTH=100000
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk_daily | awk -F '[- ]' '{
-      ;if (!($1 == "None:")) {a[$1] += $4;} else {a["None"] += $2;}}
-      END   {for (i in a) print i ": " a[i];}' | sort
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  countries)
-    WIDTH=100
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter | awk -F ',' 'NR>1 {
-      if (!($8 == "CZ" || $8 == "")) {a[$8]++;}}
-      END{for (i in a) {print i ": " a[i];}}' | sort
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  districts)
-    WIDTH=1000
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter |
-      awk -F ',' 'BEGIN {count=0;} NR>1 {if (!($6 == "")) {a[$6]++;} else {count++;}}
-                  END   {for(i in a) print i ": " a[i]; if (count) {print "None: " count;}}' | sort
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-
-    ;;
-  regions)
-    WIDTH=10000
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter |
-      awk -F ',' 'BEGIN {count=0;} NR>1 {if (!($5 == "")) {a[$5]++;} else {count++;}}
-                  END   {for(i in a) print i ": " a[i]; if (count) {print "None: " count;}}' | sort
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
-  off)
-    sed -r 's/\s+//g' $LOG_FILES | awk_filter
-    sed -r 's/\s+//g' $LOG_FILES | awk_invalid
-    ;;
+    merge)
+      cat $LOG_FILES | awk_filter
+      #sed -r 's/\s+//g' $LOG_FILES | awk_invalid
+      #TODO fix the bug
+      COMMAND="PROCESSED"
+      ;;
+    off)
+      echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter
+      COMMAND="PROCESSED"
+      ;;
 esac
 
-#READ_INPUT="gzip -d -c -f $GZ_LOG_FILES | cat $LOG_FILES -"
-#eval $READ_INPUT | awk -vFS=, '$8 == "CZ"{print $0}' osoby.csv  | wc -l
-  # https://stackoverflow.com/questions/18748933/user-input-date-format-verification-in-bash/18748968#18748968
+if ! [[ $COMMAND = "PROCESSED" ]]; then
+  echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter |
+    case $COMMAND in
+      infected)
+        sed '1d' | wc -l
+        ;;
+      age)
+        WIDTH=10000
+        awk -F ',' 'NR>1 {
+          if ($3 > 105)       {a[">105  "]++;}
+          else if ($3 > 95)   {a["96-105"]++;}
+          else if ($3 > 85)   {a["86-95 "]++;}
+          else if ($3 > 75)   {a["76-85 "]++;}
+          else if ($3 > 65)   {a["66-75 "]++;}
+          else if ($3 > 55)   {a["56-65 "]++;}
+          else if ($3 > 45)   {a["46-55 "]++;}
+          else if ($3 > 35)   {a["36-45 "]++;}
+          else if ($3 > 25)   {a["26-35 "]++;}
+          else if ($3 > 15)   {a["16-25 "]++;}
+          else if ($3 > 5)    {a["6-15  "]++;}
+          else if ($3 >= 0)   {a["0-5   "]++;}
+          else                {a["None  "]++;}
+          } END{for(i in a) print i ": " a[i]}' | sort -V # TODO fix the sorting bug
+        ;;
+      gender)
+        WIDTH=100000
+        awk -F ',' 'NR>1 {a[$4]++} END{for(i in a) print i ": " a[i]}'
+        ;;
+      daily)
+        WIDTH=500
+        awk_daily | sort
+        ;;
+      monthly)
+        WIDTH=10000
+        # use function awk_daily to print in format of YYYY-MM-DD and then process the output of this function
+        awk_daily | awk -F '[- ]' '{
+          if (!($1 == "None:")) {a[$1 "-" $2] += $4;} else {a["None"] += $2;}}
+          END   {for (i in a) print i ": " a[i];}' | sort
+        ;;
+      yearly)
+        WIDTH=100000
+        awk_daily | awk -F '[- ]' '{
+          ;if (!($1 == "None:")) {a[$1] += $4;} else {a["None"] += $2;}}
+          END   {for (i in a) print i ": " a[i];}' | sort
+        ;;
+      countries)
+        WIDTH=100
+        awk -F ',' 'NR>1 {
+          if (!($8 == "CZ" || $8 == "")) {a[$8]++;}}
+          END{for (i in a) {print i ": " a[i];}}' | sort
+        ;;
+      districts)
+        WIDTH=1000
+        awk -F ',' 'BEGIN {count=0;} NR>1 {if (!($6 == "")) {a[$6]++;} else {count++;}}
+                      END   {for(i in a) print i ": " a[i]; if (count) {print "None: " count;}}' | sort
+        ;;
+      regions)
+        WIDTH=10000
+        awk -F ',' 'BEGIN {count=0;} NR>1 {if (!($5 == "")) {a[$5]++;} else {count++;}}
+                      END   {for(i in a) print i ": " a[i]; if (count) {print "None: " count;}}' | sort
+        ;;
+    esac
+fi
+
+# in the end output all invalid lines by doing the same process again
+echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_invalid
