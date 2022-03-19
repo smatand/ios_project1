@@ -8,19 +8,19 @@ export LC_ALL=C
 
 print_help()
 {
-	echo -e	"Usage: corona [-h]"
-	echo -e	"       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
+	echo	"Usage: corona [-h]"
+	echo	"       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
 
 	echo	"Commands:"
 	echo	"	infected - counts total of infected"
 	echo	"	merge - merges files with logs into 1 file"
-	echo -e "	TODO \n" # TODO
+	echo "	TODO \n" # TODO
 
 	echo "Filters:"
 	echo	"	-a DATETIME		process logs after DATETIME including the date itself (YYYY-MM-DD)"
 	echo	"	-b DATETIME		process logs before DATETIME including the date itself"
 	echo	"	-g GENDER		process logs of infected people of a GENDER (M - men, Z - women)"
-	echo -e "	-s [WIDTH]		print data in the form of histograms (WIDTH sets width of histograms)\n"		
+	echo "	-s [WIDTH]		print data in the form of histograms (WIDTH sets width of histograms)\n"
 
 	echo "	-h			give this help list"
 }
@@ -213,7 +213,7 @@ case $COMMAND in
     COMMAND="PROCESSED"
     ;;
   merge)
-    cat $LOG_FILES | awk_filter
+    cat $LOG_FILES
     #sed -r 's/\s+//g' $LOG_FILES | awk_invalid
     #TODO fix the bug
     COMMAND="PROCESSED"
@@ -245,7 +245,8 @@ if ! [[ $COMMAND = "PROCESSED" ]]; then
           else if ($3 > 5)    {a["6-15  "]++;}
           else if ($3 >= 0)   {a["0-5   "]++;}
           else                {a["None  "]++;}
-          } END{for(i in a) print i ": " a[i]}' | sort -V # TODO fix the sorting bug
+          } END{for(i in a) print i ": " a[i]}' | sort -V |
+        awk -F ':' '{if ($1 != "None  ") {print $0;} else {a = $0;}} END {print a}'
         ;;
       gender)
         WIDTH=100000
