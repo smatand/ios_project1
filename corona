@@ -8,21 +8,27 @@ export LC_ALL=C
 
 print_help()
 {
-	echo	"Usage: corona [-h]"
-	echo	"       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
+	# echo	"Usage: corona [-h]"
+	# echo	"       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
+  printf "Usage: corona [-h]\n"
+  printf "       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
 
-	echo	"Commands:"
-	echo	"	infected - counts total of infected"
-	echo	"	merge - merges files with logs into 1 file"
-	echo "	TODO \n" # TODO
+  printf "Commands:\n"
+  printf "  infected - spocita pocet nakazenych\n"
+  printf "  merge - spoji nekolik souboru spolu\n"
 
-	echo "Filters:"
-	echo	"	-a DATETIME		process logs after DATETIME including the date itself (YYYY-MM-DD)"
-	echo	"	-b DATETIME		process logs before DATETIME including the date itself"
-	echo	"	-g GENDER		process logs of infected people of a GENDER (M - men, Z - women)"
-	echo "	-s [WIDTH]		print data in the form of histograms (WIDTH sets width of histograms)\n"
+	# echo	"Commands:"
+	# echo	"	infected - counts total of infected"
+	# echo	"	merge - merges files with logs into 1 file"
+	# echo "	TODO \n" # TODO
 
-	echo "	-h			give this help list"
+	# echo "Filters:"
+	# echo	"	-a DATETIME		process logs after DATETIME including the date itself (YYYY-MM-DD)"
+	# echo	"	-b DATETIME		process logs before DATETIME including the date itself"
+	# echo	"	-g GENDER		process logs of infected people of a GENDER (M - men, Z - women)"
+	# echo "	-s [WIDTH]		print data in the form of histograms (WIDTH sets width of histograms)\n"
+
+	# echo "	-h			give this help list"
 }
 
 awk_filter()
@@ -30,7 +36,7 @@ awk_filter()
   echo "id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
 
   awk -F ','  -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" \
-              -v filter_gender="$FILTER_GENDER" -v rgx_dt=${_regex_date} -v rgx_int=${_regex_integer} '{
+              -v filter_gender="$FILTER_GENDER" -v rgx_dt="${_regex_date}" -v rgx_int="${_regex_integer}" '{
     if ((NF <= 9 && NF > 1) && ($2 ~ rgx_dt || $2 == "") && $2 >= filter_after && $2 <= filter_before \
       && $4 == (filter_gender ? filter_gender : $4 ) && $3 ~ rgx_int) {print $0}}'
 }
@@ -39,7 +45,7 @@ awk_invalid()
 {
 
  awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" \
-            -v rgx_dt=${_regex_date} -v rgx_int=${_regex_integer} '{
+            -v rgx_dt="${_regex_date}" -v rgx_int="${_regex_integer}" '{
     if (NF <= 9 && NF>1 && $2 >= filter_after && $2 <= filter_before && $4 == (filter_gender ? filter_gender : $4 ))  {
       if (!($2 ~ rgx_dt || $2 == ""))       {print "Invalid date: " $0;}
       else if (!($3 ~ rgx_int || $2 == "")) {print "Invalid age: " $0}}}'
@@ -47,7 +53,7 @@ awk_invalid()
 
 awk_histogram()
 {
-  if [[ $S_FLAG = "default" ]]; then
+  if [ "$S_FLAG" = "default" ]; then
     awk -F ':' -v width="$WIDTH" '{
     constant=(int($2 / width)); printf("%s: ", $1); while (constant) { printf("#"); constant--} printf("\n");}'
   else
@@ -76,12 +82,12 @@ WIDTH=""
 
 COMMAND="off"
 
-GZ_LOG_FILES=""
+#GZ_LOG_FILES=""
 LOG_FILES=""
 
 OUTPUT=""
 
-_regex_date='[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])'
+_regex_date='^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$'
 _regex_integer='^[0-9]*$'
 
 # parsing filters
@@ -94,9 +100,9 @@ while [ $# -gt 0 ]; do
 				echo "error: Chybajuci argument k filtru -a"
 				exit 1
 			else
-				if [[ -z $FILTER_AFTER ]]; then
+				if [ -z "$FILTER_AFTER" ]; then
 					FILTER_AFTER=$1
-					if ! [[ $FILTER_AFTER =~ ${_regex_date} ]]; then
+					if ! echo "$FILTER_AFTER" | grep -qE "$_regex_date"; then
             echo "error: Datum musi byt vo formate YYYY-MM-DDD"
             exit 1
           fi
@@ -116,7 +122,7 @@ while [ $# -gt 0 ]; do
 					FILTER_BEFORE=$1
 					# https://stackoverflow.com/questions/21112707/check-if-a-string-matches-a-regex-in-bash-script
           # TODO what about february?
-					if ! [[ $FILTER_BEFORE =~ ${_regex_date} ]]; then
+					if ! echo "$FILTER_BEFORE" | grep -Eq "$_regex_date"; then
 					  echo "error: Datum musi byt vo formate YYYY-MM-DD"
 					  exit 1
 					fi
@@ -132,9 +138,9 @@ while [ $# -gt 0 ]; do
 	      echo "error: Chybajuci argument k filtru -g"
 	      exit 1
 	    else
-	      if [ -z $FILTER_GENDER ]; then
+	      if [ -z "$FILTER_GENDER" ]; then
 	        FILTER_GENDER=$1
-	        if ! [[ $FILTER_GENDER =~ ^[M]|[Z]$ ]]; then
+	        if ! echo "$FILTER_GENDER" | '^[M]|[Z]$'; then
 	          echo "error: Parameter pohlavia moze byt len M alebo Z."
 	          exit 1
 	        fi
@@ -146,16 +152,16 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	  -s)
-	    if ! [[ -z $S_FLAG ]]; then
+	    if ! [ -z "$S_FLAG" ]; then # TODO: use -n instead of -z
 	      echo "error: Filter -s moze byt pouzity len 1-krat."
         exit 1
 	    else
 	      # no need to check whether the next argument exists
 	      # check just whether there's any number and then check its validity
-	      if ! [[ $1 =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+	      if ! echo "$1" | grep -qE '^[+-]?[0-9]+([.][0-9])+?$'; then
 	        S_FLAG="default"
 	      else
-	        if ! [[ $1 =~ ^[1-9][0-9]*$ ]]; then
+	        if ! echo "$1"  | grep -qE '^[1-9][0-9]*$'; then
 	          echo "error: Parameter sirky moze byt len cele kladne cislo vacsie ako 0."
             exit 1
           fi
@@ -169,7 +175,7 @@ while [ $# -gt 0 ]; do
 	    break
 	    ;;
 	  infected|merge|gender|age|daily|monthly|yearly|countries|districts|regions)
-	    if [[ "$COMMAND" = "off" ]]; then
+	    if [ "$COMMAND" = "off" ]; then
 	      COMMAND=$key
 	    else
 	      echo "error: Prikaz moze byt uvedeny len raz."
@@ -177,13 +183,13 @@ while [ $# -gt 0 ]; do
 	    fi
 	    ;;
 	  *.gz)
-	    LOG_FILES=$( gzip -d -c $key )
+	    LOG_FILES=$( gzip -d -c "$key" )
 	    ;;
 	  *.bz2)
-	    LOG_FILES=$(bzip2 -d -c $key)
+	    LOG_FILES=$( bzip2 -d -c "$key" )
 	    ;;
 	  *.csv)
-	    LOG_FILES=$(cat $key)
+	    LOG_FILES_2="$key $LOG_FILES" # TODO TEMPORARY 
 	    ;;
 	  *)
 	    echo "error: Prikaz \"$key\" je neznamy. Precitajte si manual!\n"
@@ -193,6 +199,13 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
+# TODO TEMPORARY
+if [ -n "$LOG_FILES_2" ]; then
+  LOG_FILES=$(cat $LOG_FILES_2)
+else
+  LOG_FILES=$(cat)
+fi
+
 ################################ FILTERING #################################
 case $COMMAND in
   infected)
@@ -200,7 +213,8 @@ case $COMMAND in
     COMMAND="PROCESSED"
     ;;
   merge)
-    sed -r 's/\s+//g' "$LOG_FILES" | awk_filter
+    #sed -r 's/\s+//g' "$LOG_FILES" | awk_filter
+    cat $LOG_FILES | sed -r 's/\s+//g' | awk_filter
     COMMAND="PROCESSED"
     ;;
   off)
@@ -209,9 +223,7 @@ case $COMMAND in
     ;;
 esac
 
-
-
-if ! [[ $COMMAND = "PROCESSED" ]]; then
+if ! [ $COMMAND = "PROCESSED" ]; then
   OUTPUT=$( echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter |
     case $COMMAND in
       age)
@@ -275,7 +287,7 @@ if ! [[ $COMMAND = "PROCESSED" ]]; then
     regions)    WIDTH=10000;;
   esac
 
-  if ! [[ -z "$S_FLAG" ]]; then
+  if ! [ -z "$S_FLAG" ]; then
     echo "$OUTPUT" | awk_histogram
   else
     echo "$OUTPUT"
