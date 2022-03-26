@@ -8,27 +8,30 @@ export LC_ALL=C
 
 print_help()
 {
-	# echo	"Usage: corona [-h]"
-	# echo	"       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
-  printf "Usage: corona [-h]\n"
-  printf "       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n"
+  printf "Pouziti: corona [-h]\n"
+  printf "       corona [FILTERS] [COMMAND] [LOG [LOG2 [...]]\n\n"
 
-  printf "Commands:\n"
-  printf "  infected - spocita pocet nakazenych\n"
-  printf "  merge - spoji nekolik souboru spolu\n"
+  printf "COMMAND muze byt jeden z:\n"
+  printf "    infected  - spocita pocet nakazenych\n"
+  printf "    merge     - spoji nekolik souboru spolu\n"
+  printf "    gender    - vypise pocet nakazenych pro jednotliva pohlavi\n"
+  printf "    age       - vypise statistiku poctu nakazenych dle veku\n"
+  printf "    daily     - vypise statistiku osob pro jednotlive dny\n"
+  printf "    monthly   - vypise statistiku osob pro jednotlive mesice\n"
+  printf "    yearly    - vypise statistiku osob pro jednotlive roky\n"
+  printf "    countries - vypise statistiku osob pro jednotlive zeme nakazy (krome CR)\n"
+  printf "    districts - vypise statistiku osob pro jednotlive okresy\n"
+  printf "    regiones  - vypise statistiku osob pro jednotlive kraje\n\n"
 
-	# echo	"Commands:"
-	# echo	"	infected - counts total of infected"
-	# echo	"	merge - merges files with logs into 1 file"
-	# echo "	TODO \n" # TODO
-
-	# echo "Filters:"
-	# echo	"	-a DATETIME		process logs after DATETIME including the date itself (YYYY-MM-DD)"
-	# echo	"	-b DATETIME		process logs before DATETIME including the date itself"
-	# echo	"	-g GENDER		process logs of infected people of a GENDER (M - men, Z - women)"
-	# echo "	-s [WIDTH]		print data in the form of histograms (WIDTH sets width of histograms)\n"
-
-	# echo "	-h			give this help list"
+  printf "FILTER muze byt kombinace nasledujucich (kazdy maximalne jednou):\n"
+  printf "    -a DATETIME - after : jsou uvazovany data jenom po tomto datu (vcetne tohoto data)\n"
+  printf "    -b DATETIME - before: jsou uvazovany data jenom pred timto datem (vcetne tohoto data)\n\
+                  DATETIME musi byt formatu YYYY-MM-DD\n"
+  printf "    -g GENDER   - jsou uvazovany pouze zaznamy osob daneho pohlavi. \n\
+                  GENDER muze byt jenom M nebo Z\n"
+  printf "    -s [WIDTH]  - u vsech prikazu krome infected a merge vypisuje data v podobe histogramu\n\
+                  WIDTH urcuje sirku nejdelsiho radku, tedy WIDTH musi byt cele kladne cislo!\n"
+  printf "    -h          - vypise napovedu\n"
 }
 
 awk_filter()
@@ -43,7 +46,6 @@ awk_filter()
 
 awk_invalid()
 {
-
  awk -F ',' -v filter_after="$FILTER_AFTER" -v filter_before="$FILTER_BEFORE" -v filter_gender="$FILTER_GENDER" \
             -v rgx_dt="${_regex_date}" -v rgx_int="${_regex_integer}" '{
     if (NF <= 9 && NF>1 && $2 >= filter_after && $2 <= filter_before && $4 == (filter_gender ? filter_gender : $4 ))  {
@@ -55,14 +57,15 @@ awk_histogram()
 {
   if [ "$S_FLAG" = "default" ]; then
     awk -F ':' -v width="$WIDTH" '{
-    constant=(int($2 / width)); printf("%s: ", $1); while (constant) { printf("#"); constant--} printf("\n");}'
+    constant=(int($2 / width)); printf("%s:", $1); if (constant) {printf(" ")}; while (constant) { printf("#"); constant--} printf("\n");}'
   else
     awk -F ':' -v s="$S_FLAG" '
       BEGIN {max=0;}
       {      if (max<$2) {max=$2;} a[NR] = $1; value[NR] = $2;}
       END { tmp=(int(max / s));
             for (i=1; i<=NR; i++) {constant=(int(value[i] / tmp));
-            printf("%s: ", a[i]);
+            printf("%s:", a[i]);
+            if (constant) {printf(" ")}; 
             while (constant) { printf("#"); constant--} printf("\n");}}'
   fi
 }
@@ -82,15 +85,15 @@ WIDTH=""
 
 COMMAND="off"
 
-#GZ_LOG_FILES=""
 LOG_FILES=""
+GZ_FILES=""
+BZ2_FILES=""
 
 OUTPUT=""
 
 _regex_date='^[0-9]{4}[-](0[1-9]|1[0-2])[-](0[1-9]|[1-2][0-9]|3[0-1])$'
 _regex_integer='^[0-9]*$'
 
-# parsing filters
 while [ $# -gt 0 ]; do
 	key=$1
 	shift
@@ -140,7 +143,7 @@ while [ $# -gt 0 ]; do
 	    else
 	      if [ -z "$FILTER_GENDER" ]; then
 	        FILTER_GENDER=$1
-	        if ! echo "$FILTER_GENDER" | '^[M]|[Z]$'; then
+	        if ! echo "$FILTER_GENDER" | grep -qE '^[M]$|^[Z]$'; then
 	          echo "error: Parameter pohlavia moze byt len M alebo Z."
 	          exit 1
 	        fi
@@ -152,7 +155,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	  -s)
-	    if ! [ -z "$S_FLAG" ]; then # TODO: use -n instead of -z
+	    if [ -n "$S_FLAG" ]; then
 	      echo "error: Filter -s moze byt pouzity len 1-krat."
         exit 1
 	    else
@@ -172,7 +175,7 @@ while [ $# -gt 0 ]; do
 	    ;;
 	  -h|--help)
 	    print_help
-	    break
+      exit 1
 	    ;;
 	  infected|merge|gender|age|daily|monthly|yearly|countries|districts|regions)
 	    if [ "$COMMAND" = "off" ]; then
@@ -183,25 +186,30 @@ while [ $# -gt 0 ]; do
 	    fi
 	    ;;
 	  *.gz)
-	    LOG_FILES=$( gzip -d -c "$key" )
+      GZ_FILES="$GZ_FILES $key"
 	    ;;
 	  *.bz2)
-	    LOG_FILES=$( bzip2 -d -c "$key" )
+      BZ2_FILES="$BZ2_FILES $key"
 	    ;;
 	  *.csv)
-	    LOG_FILES_2="$key $LOG_FILES" # TODO TEMPORARY 
+	    LOG_FILES="$LOG_FILES $key" 
 	    ;;
 	  *)
-	    echo "error: Prikaz \"$key\" je neznamy. Precitajte si manual!\n"
+	    printf "error: Prikaz %s je neznamy. Precitajte si manual!\n" "$key"
 	    print_help
 	    exit 1
 	    ;;
 	esac
 done
 
-# TODO TEMPORARY
-if [ -n "$LOG_FILES_2" ]; then
-  LOG_FILES=$(cat $LOG_FILES_2)
+if [ -n "$GZ_FILES" ] && [ -n "$BZ2_FILES" ]; then
+  LOG_FILES=$(gzip -d -c $GZ_FILES; bzip2 -d -c $BZ2_FILES | cat $LOG_FILES -)
+elif [ -n "$GZ_FILES" ]; then
+  LOG_FILES=$(gzip -d -c $GZ_FILES | cat $LOG_FILES -)
+elif [ -n "$BZ2_FILES" ]; then
+  LOG_FILES=$(bzip2 -d -c $BZ2_FILES | cat $LOG_FILES -)
+elif [ -n "$LOG_FILES" ]; then
+  LOG_FILES=$(cat $LOG_FILES)
 else
   LOG_FILES=$(cat)
 fi
@@ -213,8 +221,7 @@ case $COMMAND in
     COMMAND="PROCESSED"
     ;;
   merge)
-    #sed -r 's/\s+//g' "$LOG_FILES" | awk_filter
-    cat $LOG_FILES | sed -r 's/\s+//g' | awk_filter
+    echo "$LOG_FILES" | sed -r 's/\s+//g' | awk_filter
     COMMAND="PROCESSED"
     ;;
   off)
@@ -251,7 +258,7 @@ if ! [ $COMMAND = "PROCESSED" ]; then
         awk_daily | sort
         ;;
       monthly)
-        # use function awk_daily to print in format of YYYY-MM-DD and then process the output of this function
+        # awk_daily to print in format of "YYYY-MM-DD : NUMBER" and then process the output
         awk_daily | awk -F '[- ]' '{
           if (!($1 == "None:")) {a[$1 "-" $2] += $4;} else {a["None"] += $2;}}
           END   {for (i in a) print i ": " a[i];}' | sort
@@ -276,6 +283,7 @@ if ! [ $COMMAND = "PROCESSED" ]; then
         ;;
     esac
   )
+
   case $COMMAND in
     age)        WIDTH=10000;;
     gender)     WIDTH=100000;;
