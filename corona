@@ -131,7 +131,7 @@ while [ $# -gt 0 ]; do
 					  exit 1
 					fi
 				else
-					echo "error: Filter -b moze byt pouzity len 1-krat a na prvej pozicii (viz. -h)."
+					echo "error: Filter moze byt pouzity len 1-krat a na prvej pozicii (viz. -h)."
 					exit 1
 				fi
 			fi
@@ -156,8 +156,8 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	  -s)
-	    if [ -n "$S_FLAG" ] && ! [ "$ARG_INDEX" = "1" ]; then
-	      echo "error: Filter -s moze byt pouzity len 1-krat."
+	    if [ -n "$S_FLAG" ] || ! [ "$ARG_INDEX" = "1" ]; then
+	      echo "error: Filter moze byt pouzity len 1-krat a na prvej pozicii (viz. -h)."
         exit 1
 	    else
 	      # no need to check whether the next argument exists
@@ -183,7 +183,7 @@ while [ $# -gt 0 ]; do
 	      COMMAND=$key
         ARG_INDEX="2"
 	    else
-	      echo "error: Filter moze byt uvedeny len raz a na druhej pozicii (viz. -h)."
+	      echo "error: Prikaz moze byt uvedeny len raz a na druhej pozicii (viz. -h)."
 	      exit 1
 	    fi
 	    ;;
