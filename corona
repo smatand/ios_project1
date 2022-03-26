@@ -80,6 +80,7 @@ FILTER_AFTER=""
 FILTER_BEFORE="9999-12-31"
 FILTER_GENDER=""
 
+ARG_INDEX="1"
 S_FLAG=""
 WIDTH=""
 
@@ -103,14 +104,14 @@ while [ $# -gt 0 ]; do
 				echo "error: Chybajuci argument k filtru -a"
 				exit 1
 			else
-				if [ -z "$FILTER_AFTER" ]; then
+				if [ -z "$FILTER_AFTER" ] && [ "$ARG_INDEX" = "1" ]; then
 					FILTER_AFTER=$1
 					if ! echo "$FILTER_AFTER" | grep -qE "$_regex_date"; then
             echo "error: Datum musi byt vo formate YYYY-MM-DDD"
             exit 1
           fi
 				else
-					echo "error: Filter -a moze byt pouzity len 1-krat."
+					echo "error: Filter -a moze byt pouzity len 1-krat a na prvej pozicii (viz. -h)."
 					exit 1
 				fi
 			fi
@@ -121,7 +122,7 @@ while [ $# -gt 0 ]; do
 				echo "error: Chybajuci argument k filtru -b"
 				exit 1
 			else
-				if [ "$FILTER_BEFORE" = "9999-12-31" ]; then
+				if [ "$FILTER_BEFORE" = "9999-12-31" ] && [ "$ARG_INDEX" = "1" ]; then
 					FILTER_BEFORE=$1
 					# https://stackoverflow.com/questions/21112707/check-if-a-string-matches-a-regex-in-bash-script
           # TODO what about february?
@@ -130,7 +131,7 @@ while [ $# -gt 0 ]; do
 					  exit 1
 					fi
 				else
-					echo "error: Filter -b moze byt pouzity len 1-krat."
+					echo "error: Filter -b moze byt pouzity len 1-krat a na prvej pozicii (viz. -h)."
 					exit 1
 				fi
 			fi
@@ -141,21 +142,21 @@ while [ $# -gt 0 ]; do
 	      echo "error: Chybajuci argument k filtru -g"
 	      exit 1
 	    else
-	      if [ -z "$FILTER_GENDER" ]; then
+	      if [ -z "$FILTER_GENDER" ] && [ "$ARG_INDEX" = "1" ]; then
 	        FILTER_GENDER=$1
 	        if ! echo "$FILTER_GENDER" | grep -qE '^[M]$|^[Z]$'; then
 	          echo "error: Parameter pohlavia moze byt len M alebo Z."
 	          exit 1
 	        fi
 	      else
-	        echo "error: Filter moze byt pouzity len 1-krat."
+	        echo "error: Filter moze byt pouzity len 1-krat. a na prvej pozicii (viz. -h)."
 	        exit 1
 	      fi
 	    fi
 	    shift
 	    ;;
 	  -s)
-	    if [ -n "$S_FLAG" ]; then
+	    if [ -n "$S_FLAG" ] && ! [ "$ARG_INDEX" = "1" ]; then
 	      echo "error: Filter -s moze byt pouzity len 1-krat."
         exit 1
 	    else
@@ -178,22 +179,26 @@ while [ $# -gt 0 ]; do
       exit 1
 	    ;;
 	  infected|merge|gender|age|daily|monthly|yearly|countries|districts|regions)
-	    if [ "$COMMAND" = "off" ]; then
+	    if [ "$COMMAND" = "off" ] && [ "$ARG_INDEX" = "1" ]; then
 	      COMMAND=$key
+        ARG_INDEX="2"
 	    else
-	      echo "error: Prikaz moze byt uvedeny len raz."
+	      echo "error: Filter moze byt uvedeny len raz a na druhej pozicii (viz. -h)."
 	      exit 1
 	    fi
 	    ;;
-	  *.gz)
+    *.gz)
       GZ_FILES="$GZ_FILES $key"
-	    ;;
-	  *.bz2)
+      ARG_INDEX="3"
+      ;;
+    *.bz2)
       BZ2_FILES="$BZ2_FILES $key"
-	    ;;
-	  *.csv)
-	    LOG_FILES="$LOG_FILES $key" 
-	    ;;
+      ARG_INDEX="3"
+      ;;
+    *.csv)
+      LOG_FILES="$LOG_FILES $key"
+      ARG_INDEX="3"
+      ;;
 	  *)
 	    printf "error: Prikaz %s je neznamy. Precitajte si manual!\n" "$key"
 	    print_help
@@ -295,7 +300,7 @@ if ! [ $COMMAND = "PROCESSED" ]; then
     regions)    WIDTH=10000;;
   esac
 
-  if ! [ -z "$S_FLAG" ]; then
+  if [ -n "$S_FLAG" ]; then
     echo "$OUTPUT" | awk_histogram
   else
     echo "$OUTPUT"
