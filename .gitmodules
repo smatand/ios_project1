@@ -1,0 +1,3 @@
+[submodule "IJC_02_tests"]
+	path = IJC_02_tests
+	url = https://github.com/Mearsu/IJC_02_tests
