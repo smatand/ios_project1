@@ -249,7 +249,9 @@ if ! [ $COMMAND = "PROCESSED" ]; then
         awk -F ':' '{if ($1 != "None  ") {print $0;} else {a = $0;}} END {print a}'
         ;;
       gender)
-        awk -F ',' 'NR>1 {a[$4]++} END{for(i in a) print i ": " a[i]}'
+        awk -F ',' 'NR>1 {if ($4 != "") {a[$4]++;} else {a["None"]++;}} 
+        END{for(i in a) {print i ": " a[i];}}' | sort -V |
+        awk -F ':' '{if ($1 != "None") {print $0;} else {a = $0;}} END {print a}'
         ;;
       daily)
         awk_daily | sort
