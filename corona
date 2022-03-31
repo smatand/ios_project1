@@ -216,21 +216,21 @@ fi
 ################################ FILTERING #################################
 case $COMMAND in
   infected)
-    echo "$LOG_FILES" | sed -r 's/\s+//g' | awk_filter | sed '1d' | wc -l
+    echo "$LOG_FILES" | tr -d '[:blank:]' | awk_filter | sed '1d' | wc -l
     COMMAND="PROCESSED"
     ;;
   merge)
-    echo "$LOG_FILES" | sed -r 's/\s+//g' | awk_filter
+    echo "$LOG_FILES" | tr -d '[:blank:]' | awk_filter
     COMMAND="PROCESSED"
     ;;
   off)
-    echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter
+    echo "$LOG_FILES"  |tr -d '[:blank:]' | awk_filter
     COMMAND="PROCESSED"
     ;;
 esac
 
 if ! [ $COMMAND = "PROCESSED" ]; then
-  OUTPUT=$( echo "$LOG_FILES"  | sed -r 's/\s+//g' | awk_filter |
+  OUTPUT=$( echo "$LOG_FILES"  | tr -d '[:blank:]' | awk_filter |
     case $COMMAND in
       age)
         awk -F ',' 'BEGIN  {
